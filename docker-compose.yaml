@@ -25,7 +25,7 @@ services:
       registry:
         condition: service_healthy
     user: root
-    command: "sh -c \"chown -R node:node /home/node/shared && exec ./scripts/entrypoint.sh\"\n"
+    command: "sh -c \"chown -R node:node /home/node/shared && export CLICKHOUSE_URL=$$(echo $$CLICKHOUSE_URL | sed 's/?secure=false//;s/?secure=true//') && export RUN_REPLICATION_CLICKHOUSE_URL=$$(echo $$RUN_REPLICATION_CLICKHOUSE_URL | sed 's/?secure=false//;s/?secure=true//') && exec ./scripts/entrypoint.sh\"\n"
     environment:
       REMIX_APP_PORT: 3000
       APP_ORIGIN: '${SERVICE_URL_TRIGGER}'
@@ -58,7 +58,7 @@ services:
       CLICKHOUSE_LOG_LEVEL: info
       INTERNAL_OTEL_TRACE_LOGGING_ENABLED: 0
       RUN_REPLICATION_ENABLED: 1
-      RUN_REPLICATION_CLICKHOUSE_URL: 'http://${CLICKHOUSE_ADMIN_USER:-default}:${SERVICE_PASSWORD_64_CLICKHOUSE}@clickhouse:8123'
+      RUN_REPLICATION_CLICKHOUSE_URL: 'http://${CLICKHOUSE_ADMIN_USER:-default}:${SERVICE_PASSWORD_64_CLICKHOUSE}@clickhouse:8123?secure=false'
       RUN_REPLICATION_LOG_LEVEL: info
       APP_LOG_LEVEL: info
       TRIGGER_TELEMETRY_DISABLED: 0
