@@ -12,12 +12,18 @@ services:
     image: 'ghcr.io/triggerdotdev/trigger.dev:v4.4.3'
     restart: unless-stopped
     depends_on:
-      - postgres
-      - redis
-      - clickhouse
-      - electric
-      - minio
-      - registry
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      electric:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      registry:
+        condition: service_healthy
     user: root
     command: "sh -c \"chown -R node:node /home/node/shared && exec ./scripts/entrypoint.sh\"\n"
     environment:
@@ -69,6 +75,14 @@ services:
       TASK_RUN_METADATA_MAXIMUM_SIZE: '${TASK_RUN_METADATA_MAXIMUM_SIZE:-262144}'
       REALTIME_STREAM_MAX_LENGTH: '${REALTIME_STREAM_MAX_LENGTH:-1000}'
       REALTIME_STREAM_TTL: '${REALTIME_STREAM_TTL:-86400}'
+      EMAIL_TRANSPORT: '${EMAIL_TRANSPORT:-smtp}'
+      SMTP_HOST: '${SMTP_HOST}'
+      SMTP_PORT: '${SMTP_PORT:-587}'
+      SMTP_SECURE: '${SMTP_SECURE:-false}'
+      SMTP_USER: '${SMTP_USER}'
+      SMTP_PASSWORD: '${SMTP_PASSWORD}'
+      FROM_EMAIL: '${FROM_EMAIL}'
+      REPLY_TO_EMAIL: '${REPLY_TO_EMAIL}'
     volumes:
       - 'shared-data:/home/node/shared'
     healthcheck:
@@ -80,7 +94,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
   postgres:
     image: 'postgres:14'
     restart: unless-stopped
@@ -121,7 +135,8 @@ services:
     image: 'electricsql/electric:1.2.4'
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_URL: 'postgresql://postgres:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-trigger}?schema=public&sslmode=disable'
       ELECTRIC_INSECURE: 'true'
@@ -211,8 +226,10 @@ services:
     image: 'ghcr.io/triggerdotdev/supervisor:v4.2.0'
     restart: unless-stopped
     depends_on:
-      - docker-proxy
-      - trigger
+      docker-proxy:
+        condition: service_healthy
+      trigger:
+        condition: service_healthy
     user: root
     environment:
       TRIGGER_API_URL: 'http://trigger:3000'
@@ -242,7 +259,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 10s
+      start_period: 30s
   docker-proxy:
     image: 'tecnativa/docker-socket-proxy:latest'
     restart: unless-stopped
